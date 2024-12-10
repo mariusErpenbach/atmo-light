@@ -1,0 +1,20 @@
+#include <Adafruit_NeoPixel.h>
+
+#define PIN 4       // Der Daten-Pin, an dem die LEDs angeschlossen sind
+#define NUMPIXELS 60 // Anzahl der LEDs im Stripe
+
+Adafruit_NeoPixel strip(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
+void setup() {
+  strip.begin();
+  strip.setBrightness(25); // Sehr niedrige Helligkeit (10% von 255)
+  strip.show(); // Alle LEDs ausschalten
+}
+
+void loop() {
+  for (int i = 0; i < NUMPIXELS; i++) {
+    strip.setPixelColor(i, strip.Color(0, 64, 64)); // Schwaches Türkis (schwaches Grün und Blau)
+  }
+  strip.show(); // Farben aktualisieren
+  delay(1000);  // 1 Sekunde warten (falls du es später dynamisch ändern möchtest)
+}
