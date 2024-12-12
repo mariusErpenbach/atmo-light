@@ -1,0 +1,106 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <Adafruit_NeoPixel.h>
+
+#define PIN 4         // Der Daten-Pin für die LEDs
+#define NUMPIXELS 60  // Anzahl der LEDs im Stripe
+
+const char* ssid = "";
+const char* password = "";
+
+WebServer server(80);
+Adafruit_NeoPixel strip(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
+// Funktion zum Faden der Farben
+void fadeToColor(int r, int g, int b, int steps) {
+  int currentR, currentG, currentB;
+  currentR = strip.getPixelColor(0) >> 16 & 0xFF; // Anfangsrotwert von der ersten LED
+  currentG = strip.getPixelColor(0) >> 8 & 0xFF;  // Anfangsgrünwert
+  currentB = strip.getPixelColor(0) & 0xFF;       // Anfangsblauwert
+
+  for (int i = 0; i <= steps; i++) {
+    int newR = currentR + (r - currentR) * i / steps;
+    int newG = currentG + (g - currentG) * i / steps;
+    int newB = currentB + (b - currentB) * i / steps;
+
+    // Alle LEDs auf die neuen Werte setzen
+    for (int j = 0; j < NUMPIXELS; j++) {
+      strip.setPixelColor(j, strip.Color(newR, newG, newB));
+    }
+    strip.show();
+    delay(10); // Verlangsamt den Übergang, du kannst die Zahl weiter anpassen
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Mit WLAN verbinden
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Verbindet zu WLAN...");
+  }
+  Serial.println("WLAN verbunden!");
+  Serial.println("IP-Adresse: " + WiFi.localIP().toString());
+
+  // Root und SetColor Endpoints definieren
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/setColor", HTTP_POST, handleSetColor);
+
+  // Preflight-Request (OPTIONS) korrekt behandeln
+  server.on("/setColor", HTTP_OPTIONS, handleOptions);
+
+  server.begin();
+  Serial.println("Webserver gestartet!");
+
+  strip.begin();
+  strip.setBrightness(35); // Helligkeit reduzieren
+  strip.show();
+}
+
+void loop() {
+  server.handleClient(); // Eingehende HTTP-Anfragen verarbeiten
+}
+
+// Root-Seite
+void handleRoot() {
+  server.send(200, "text/plain", "ESP32 LED Controller online");
+}
+
+// Behandlung des Preflight-Requests (OPTIONS)
+void handleOptions() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+  server.send(200);
+}
+
+// Farbe setzen
+void handleSetColor() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (server.hasArg("plain")) {
+    String body = server.arg("plain");
+    Serial.println("Empfangener Body: " + body);
+
+    int rIndex = body.indexOf("\"r\":") + 4;
+    int gIndex = body.indexOf("\"g\":") + 4;
+    int bIndex = body.indexOf("\"b\":") + 4;
+
+    int r = body.substring(rIndex, body.indexOf(",", rIndex)).toInt();
+    int g = body.substring(gIndex, body.indexOf(",", gIndex)).toInt();
+    int b = body.substring(bIndex, body.indexOf("}", bIndex)).toInt();
+
+    Serial.println("Farbe empfangen - R: " + String(r) + ", G: " + String(g) + ", B: " + String(b));
+
+    // LEDs über mehrere Schritte hinweg zu der neuen Farbe ändern
+    fadeToColor(r, g, b, 200); // Fadest 200 Schritte für einen sehr flüssigen Übergang
+
+    server.send(200, "text/plain", "Farbe aktualisiert");
+  } else {
+    server.send(400, "text/plain", "Kein JSON-Body gefunden");
+  }
+}
