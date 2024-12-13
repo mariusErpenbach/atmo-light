@@ -1,3 +1,8 @@
+require('dotenv').config();
+
+
+
+
 // Funktion, um eine zufällige Farbe zu generieren
 function getRandomColor() {
     const r = Math.floor(Math.random() * 256);
@@ -6,7 +11,7 @@ function getRandomColor() {
     return { r, g, b };
 }
 
-const esp32Url = 'http://192.168.178.25/setColor'; // IP des ESP32
+const esp32Url = `http://${process.env.ESP32_IP}/setColor`;
 
 let lastSentTime = 0;
 const minInterval = 100; // 100ms = 10 Anfragen pro Sekunde
