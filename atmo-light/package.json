@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n \"Next,Flask,Proxy\" \"npm run next-dev\" \"npm run flask-dev\" ",
+    "dev": "concurrently -n \"Next,Flask\" \"npm run next-dev\" \"npm run flask-dev\" ",
     "next-dev": "next dev",
     "flask-dev": "python3 flask_screen_capture.py",
-    "proxy": "node proxy.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "dompurify": "^3.2.4",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "http-proxy-middleware": "^3.0.3",
